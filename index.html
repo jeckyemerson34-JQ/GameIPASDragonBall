@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misi Goku: 9 Dragon Ball Cahaya</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Bangers&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --db-orange: #ff8a00;
+            --db-red: #e11d48;
+            --db-yellow: #facc15;
+            --db-blue: #2563eb;
+            --kame-yellow: #fff9c4;
+            --kame-yellow-glow: #ffd700;
+            --enemy-blue: #b9e9ff;
+            --enemy-blue-glow: #009dff;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #000;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+        .font-dragon { font-family: 'Luckiest+Guy', cursive; }
+        .font-bangers { font-family: 'Bangers', cursive; letter-spacing: 2px; }
+        
+        .landing-bg {
+            background-image: url('https://i.imgur.com/e2UCPgB.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Gaya Bola Naga di Beranda */
+        .dragonball-btn {
+            background: radial-gradient(circle, #fbbf24 0%, #f59e0b 70%, #d97706 100%);
+            box-shadow: 0 4px 0 #92400e, 0 10px 20px rgba(0,0,0,0.5);
+            border: 3px solid #fff;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: absolute;
+            z-index: 40;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dragonball-btn:not(.locked):hover {
+            transform: scale(1.2) translateY(-5px);
+            z-index: 50;
+            box-shadow: 0 0 25px #fbbf24;
+        }
+
+        .dragonball-btn.locked {
+            filter: grayscale(1) brightness(0.4);
+            cursor: not-allowed;
+            opacity: 0.6;
+            border-color: #444;
+        }
+
+        .dragonball-btn.current-level {
+            animation: pulse-active 1.5s infinite;
+            border-color: #00ff00;
+            border-width: 4px;
+        }
+
+        @keyframes pulse-active {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 10px #00ff00; }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px #00ff00; }
+        }
+
+        /* Jalur Panah */
+        #path-svg {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 35;
+        }
+        .path-line {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.3);
+            stroke-width: 3;
+            stroke-dasharray: 10, 5;
+            transition: stroke 0.5s;
+        }
+        .path-completed {
+            stroke: #ffd700;
+            stroke-width: 5;
+            stroke-dasharray: none;
+            filter: drop-shadow(0 0 5px gold);
+        }
+
+        /* Efek Serangan */
+        #effect-container {
+            position: absolute;
+            width: 100%;
+            height: 200px;
+            top: 50%; 
+            left: 0;
+            transform: translateY(-50%);
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+        .energy-ball {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 12;
+            animation: energy-shake 0.1s infinite;
+        }
+        .energy-beam {
+            position: absolute;
+            left: 50%; 
+            top: 50%;
+            height: 100px;
+            width: 0;
+            transform: translateY(-50%);
+            transform-origin: left center; 
+            z-index: 11;
+        }
+        .effect-to-hero .energy-beam { transform: translateY(-50%) scaleX(-1); }
+
+        .theme-yellow .energy-ball { background: var(--kame-yellow); box-shadow: 0 0 50px 30px white, 0 0 100px 60px var(--kame-yellow-glow); }
+        .theme-yellow .energy-beam { background: linear-gradient(to right, white, transparent); box-shadow: 0 0 70px var(--kame-yellow-glow); }
+        .theme-blue .energy-ball { background: var(--enemy-blue); box-shadow: 0 0 50px 30px white, 0 0 100px 60px var(--enemy-blue-glow); }
+        .theme-blue .energy-beam { background: linear-gradient(to right, white, transparent); box-shadow: 0 0 70px var(--enemy-blue-glow); }
+
+        @keyframes fire-beam { 0% { width: 0; opacity: 1; } 30% { width: 60%; opacity: 1; } 80% { width: 60%; opacity: 1; } 100% { width: 60%; opacity: 0; } }
+        .beam-active { animation: fire-beam 1.2s ease-out forwards; }
+        
+        /* Animasi Pengumpulan Energi (Charging) */
+        @keyframes charging-energy {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.5; }
+            80% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        }
+        .charging-active { animation: charging-energy 2.8s ease-in-out forwards; }
+
+        @keyframes energy-shake { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -52%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); } }
+        @keyframes status-pop { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        .status-show { animation: status-pop 0.4s ease-out forwards; }
+
+        .battle-overlay { background: rgba(0,0,0,0.2); position: absolute; inset: 0; z-index: -1; }
+        
+        /* Gaya Tombol Musik */
+        #music-toggle-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 100;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #fff;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #music-toggle-btn:hover { transform: scale(1.1); background: rgba(0,0,0,0.8); }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 10px; }
+    </style>
+</head>
+<body onclick="playOpeningMusic()">
+
+    <!-- Audio Player: Musik Pembuka -->
+    <audio id="opening-music" loop>
+        <source src="https://raw.githubusercontent.com/jeckyemerson34-JQ/musikopeningdragonball/main/LAGU%20OPENING%20DRAGON%20BALL%20%E2%94%82%20LIRIK%20-%20GOOD%20MUSIC.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Audio Player: Musik Pertempuran -->
+    <audio id="battle-music" loop>
+        <source src="https://github.com/jeckyemerson34-JQ/musik-ketika-game-dragon-ball-dimulai/raw/refs/heads/main/Dragonball%20Super%20OST%20-%20Desperate%20Assault%20Theme%20%5BHQ%20Cover%5D%20-%20Pok%C3%A9Mixr92.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Audio Player: Suara Serangan Kamehameha -->
+    <audio id="attack-sound">
+        <source src="https://github.com/jeckyemerson34-JQ/kamehameha/raw/refs/heads/main/kamehameha%20sound%20-%20Marian%20Baicu%20(1).mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Tombol Suara -->
+    <button id="music-toggle-btn" onclick="toggleMute(event)">
+        <span id="music-icon">🔊</span>
+    </button>
+
+    <div id="game-container" class="w-full h-full relative flex flex-col overflow-hidden">
+        
+        <!-- Layar Beranda -->
+        <div id="start-screen" class="absolute inset-0 z-10 overflow-hidden text-center flex items-center justify-center">
+            <div class="landing-bg"></div>
+            
+            <div class="relative z-40 flex flex-col items-center pointer-events-none transform translate-y-24 md:translate-y-32">
+                <div class="bg-black/70 p-2 md:p-3 rounded-2xl border-2 border-yellow-400 backdrop-blur-sm shadow-2xl scale-75 md:scale-85 pointer-events-auto">
+                    <button onclick="openRadar()" class="bg-blue-600 text-white font-dragon py-1 px-6 rounded-full border-2 border-white shadow-xl hover:scale-105 transition-transform text-[10px] uppercase">BUKA RADAR MISI IPAS</button>
+                    <p class="text-white/70 text-[8px] mt-1.5 font-bold uppercase italic">Selesaikan Level Secara Berurutan!</p>
+                </div>
+            </div>
+
+            <svg id="path-svg" width="100%" height="100%">
+                <defs>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255,255,255,0.4)" />
+                    </marker>
+                    <marker id="arrow-gold" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffd700" />
+                    </marker>
+                </defs>
+            </svg>
+            <div id="scattered-balls" class="absolute inset-0 z-30"></div>
+        </div>
+
+        <!-- Layar Radar -->
+        <div id="map-screen" class="hidden absolute inset-0 flex flex-col bg-sky-50 z-20">
+            <div class="bg-blue-700 p-6 flex justify-between items-center text-white border-b-8 border-blue-900 shadow-2xl">
+                <button onclick="goToHome()" class="bg-red-600 p-2 rounded-lg border-2 border-white shadow-md"><span class="text-xl">🏠</span></button>
+                <span class="font-dragon text-2xl uppercase">RADAR BOLA NAGA IPAS</span>
+                <div class="flex items-center gap-4 bg-black/50 px-6 py-2 rounded-full border border-white/20">
+                    <span id="collected-count" class="font-dragon text-3xl">0/9</span>
+                    <div class="w-8 h-8 dragonball-bg rounded-full flex items-center justify-center border border-orange-900"><span class="text-red-600 text-xs font-bold">★</span></div>
+                </div>
+            </div>
+            <div class="map-container flex-grow p-8 grid grid-cols-2 md:grid-cols-3 gap-6 overflow-y-auto"></div>
+        </div>
+
+        <!-- Layar Pertarungan -->
+        <div id="battle-screen" class="hidden absolute inset-0 p-4 flex flex-col z-30 transition-all duration-500 bg-center bg-cover bg-no-repeat">
+            <div id="battle-overlay-div" class="hidden battle-overlay"></div>
+            
+            <div id="effect-container">
+                <div id="energy-ball-el" class="energy-ball"></div>
+                <div id="effect-beam-el" class="energy-beam"></div>
+            </div>
+
+            <div class="flex justify-between items-center mb-1 relative z-10">
+                 <button onclick="goToHome()" class="bg-red-500 px-3 py-1 rounded font-bold text-white text-[10px] border border-white shadow-sm uppercase">🏠 Keluar</button>
+                 <div id="quest-counter" class="bg-yellow-400 px-3 py-1 rounded-full font-bold border border-black text-[10px]">SOAL 1/5</div>
+            </div>
+
+            <div class="flex justify-between items-center mb-1 bg-white/40 backdrop-blur-sm p-2 rounded-lg border border-white/30 shadow-sm relative z-10 mx-auto w-full max-w-md">
+                <div class="text-center w-2/5">
+                    <div class="font-dragon text-[10px] text-blue-800 uppercase font-bold">GOKU</div>
+                    <div class="w-full bg-gray-300 rounded-full h-2 mt-1 border border-black/30 overflow-hidden"><div id="goku-hp" class="bg-gradient-to-r from-green-500 to-emerald-400 h-full transition-all duration-500" style="width: 100%"></div></div>
+                </div>
+                <div class="font-bangers text-lg text-red-600 italic">VS</div>
+                <div class="text-center w-2/5">
+                    <div id="enemy-label" class="font-dragon text-[10px] text-red-800 uppercase font-bold text-right">MUSUH</div>
+                    <div class="w-full bg-gray-300 rounded-full h-2 mt-1 border border-black/30 overflow-hidden"><div id="enemy-hp" class="bg-gradient-to-r from-red-500 to-orange-400 h-full transition-all duration-500" style="width: 100%"></div></div>
+                </div>
+            </div>
+
+            <div id="question-box" class="mt-auto mb-2 bg-white/90 backdrop-blur-md border-[4px] border-orange-500 rounded-xl p-3 shadow-2xl relative z-30 mx-auto w-full max-w-lg">
+                <div id="answer-status" class="hidden text-center font-dragon text-3xl mb-2"></div>
+                <p id="question-text" class="text-[11px] md:text-[13px] font-bold text-slate-900 text-center mb-3 leading-tight"></p>
+                <div id="options-container" class="grid grid-cols-2 gap-2"></div>
+            </div>
+        </div>
+
+        <!-- Modal Feedback -->
+        <div id="feedback-modal" class="hidden absolute inset-0 bg-black/90 flex items-center justify-center z-50 p-6 backdrop-blur-md">
+            <div class="bg-white rounded-[2.5rem] p-8 text-center max-w-md w-full border-[8px] border-yellow-400 shadow-2xl">
+                <div id="feedback-icon" class="text-8xl mb-4 animate-bounce">🔮</div>
+                <h3 id="feedback-title" class="text-4xl font-dragon mb-2 text-orange-600">MENANG!</h3>
+                <p id="feedback-msg" class="text-slate-600 mb-6 text-xl font-medium"></p>
+                <button id="feedback-btn" class="w-full py-4 rounded-2xl font-dragon text-2xl text-white bg-green-500 shadow-xl transition-transform active:scale-95">AMBIL BOLA NAGA</button>
+            </div>
+        </div>
+
+        <!-- Layar Akhir -->
+        <div id="end-screen" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-40 overflow-hidden">
+            <div class="absolute inset-0 bg-black/40"></div>
+            <div class="relative z-10 flex flex-col items-center">
+                <h1 class="text-6xl md:text-8xl font-dragon text-yellow-400 italic drop-shadow-2xl mb-2 end-title-glow">MISI BERHASIL!</h1>
+                <p class="text-2xl md:text-3xl font-bangers text-white mb-8 bg-red-600 px-10 py-2 border-4 border-white shadow-2xl transform -rotate-1 uppercase tracking-widest">9 Bola Naga Terkumpul!</p>
+                <div class="grid grid-cols-3 md:grid-cols-9 gap-4 mb-12" id="ball-display"></div>
+                <button onclick="location.reload()" class="bg-gradient-to-b from-yellow-400 to-orange-600 text-white font-dragon text-3xl py-4 px-12 rounded-full border-4 border-white shadow-2xl hover:scale-110 transition-transform active:scale-95">MAIN LAGI</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ballPositions = [
+            { top: 35, left: 15 }, { top: 45, left: 42 }, { top: 25, left: 75 }, 
+            { top: 55, left: 85 }, { top: 75, left: 65 }, { top: 85, left: 35 }, 
+            { top: 70, left: 10 }, { top: 50, left: 25 }, { top: 15, left: 45 }
+        ];
+
+        const locations = [
+            { id: 1, name: "Tumbuhan (K4)", enemy: "Piccolo", icon: "🌱", property: "Bagian Tumbuhan", battleBg: "https://i.imgur.com/GISjaku.jpeg" },
+            { id: 2, name: "Zat (K4)", enemy: "Frieza", icon: "🧊", property: "Wujud Zat", battleBg: "https://i.imgur.com/cczksLX.jpeg" },
+            { id: 3, name: "Gaya (K4)", enemy: "Vegeta", icon: "🏹", property: "Gaya & Energi", battleBg: "https://i.imgur.com/VlrCR99.jpeg" },
+            { id: 4, name: "Ekosistem (K5)", enemy: "Cell", icon: "🦊", property: "Rantai Makanan", battleBg: "https://i.imgur.com/G7J96Fu.jpeg" },
+            { id: 5, name: "Tubuh (K5)", enemy: "Majin Buu", icon: "🫁", property: "Organ Tubuh", battleBg: "https://i.imgur.com/SmljfRA.jpeg" },
+            { id: 6, name: "Listrik (K5)", enemy: "Jiren", icon: "⚡", property: "Listrik & Magnet", battleBg: "https://i.imgur.com/KSIVcaE.jpeg" },
+            { id: 7, name: "Adaptasi (K6)", enemy: "Broly", icon: "🦎", property: "Adaptasi", battleBg: "https://i.imgur.com/XuaPG7t.jpeg" },
+            { id: 8, name: "Tata Surya (K6)", enemy: "Goku Black", icon: "🪐", property: "Planet", battleBg: "https://i.imgur.com/dPeyDYG.jpeg" },
+            { id: 9, name: "Energi (K6)", enemy: "Shenron", icon: "🌬️", property: "Energi Alternatif", battleBg: "https://i.imgur.com/NufeNjU.jpeg" }
+        ];
+
+        const questionBank = {
+            1: [
+                { q: "Bagian tumbuhan yang berfungsi menyerap air dan zat hara dari dalam tanah adalah...", options: ["Batang", "Daun", "Akar", "Bunga"], correct: 2 },
+                { q: "Proses pembuatan makanan pada tumbuhan hijau disebut...", options: ["Respirasi", "Fotosintesis", "Adaptasi", "Oksidasi"], correct: 1 },
+                { q: "Zat warna hijau pada daun yang membantu proses fotosintesis adalah...", options: ["Klorofil", "Hemoglobin", "Melanin", "Karoten"], correct: 0 },
+                { q: "Bagian tumbuhan yang berfungsi sebagai tempat perkembangbiakan adalah...", options: ["Daun", "Bunga", "Akar", "Batang"], correct: 1 },
+                { q: "Hasil dari proses fotosintesis yang dibutuhkan manusia untuk bernapas adalah...", options: ["Karbon dioksida", "Air", "Oksigen", "Karbohidrat"], correct: 2 }
+            ],
+            2: [
+                { q: "Benda yang memiliki bentuk dan volume yang tetap disebut benda...", options: ["Cair", "Gas", "Padat", "Plasma"], correct: 2 },
+                { q: "Perubahan wujud dari benda padat menjadi benda cair disebut...", options: ["Membeku", "Menguap", "Mencair", "Menyublim"], correct: 2 },
+                { q: "Asap knalpot kendaraan merupakan contoh dari benda berwujud...", options: ["Padat", "Cair", "Gas", "Bening"], correct: 2 },
+                { q: "Kapur barus yang diletakkan di lemari lama-kelamaan akan habis. Peristiwa ini disebut...", options: ["Mengkristal", "Menyublim", "Menguap", "Membeku"], correct: 1 },
+                { q: "Perubahan wujud dari gas menjadi cair disebut...", options: ["Mengembun", "Mencair", "Menguap", "Mengkristal"], correct: 0 }
+            ],
+            3: [
+                { q: "Tarikan atau dorongan yang diberikan pada suatu benda disebut...", options: ["Energi", "Gaya", "Daya", "Gerak"], correct: 1 },
+                { q: "Saat kita menendang bola, kita memberikan gaya berupa...", options: ["Tarikan", "Gesekan", "Dorongan", "Magnet"], correct: 2 },
+                { q: "Buah kelapa jatuh dari pohon ke bawah karena adanya gaya...", options: ["Magnet", "Otot", "Pegas", "Gravitasi"], correct: 3 },
+                { q: "Gaya yang terjadi ketika dua permukaan benda saling bersentuhan adalah gaya...", options: ["Otot", "Gesek", "Pegas", "Listrik"], correct: 1 },
+                { q: "Alat yang digunakan untuk mengukur besar kecilnya gaya adalah...", options: ["Termometer", "Barometer", "Dinamometer", "Speedometer"], correct: 2 }
+            ],
+            4: [
+                { q: "Sekumpulan makhluk hidup sejenis yang hidup di suatu tempat disebut...", options: ["Individu", "Populasi", "Komunitas", "Ekosistem"], correct: 1 },
+                { q: "Makhluk hidup yang dapat membuat makanannya sendiri disebut...", options: ["Konsumen", "Pengurai", "Produsen", "Parasit"], correct: 2 },
+                { q: "Hubungan timbal balik antara lebah dan bunga disebut simbiosis...", options: ["Komensalisme", "Parasitisme", "Mutualisme", "Amensalisme"], correct: 2 },
+                { q: "Dalam rantai makanan, jamur dan bakteri berperan sebagai...", options: ["Produsen", "Konsumen I", "Konsumen II", "Pengurai"], correct: 3 },
+                { q: "Makhluk hidup yang memakan tumbuhan secara langsung disebut...", options: ["Karnivora", "Herbivora", "Omnivora", "Insektivora"], correct: 1 }
+            ],
+            5: [
+                { q: "Alat pernapasan pada manusia adalah...", options: ["Insang", "Paru-paru", "Trakea", "Kulit"], correct: 1 },
+                { q: "Proses penyerapan sari-sari makanan terjadi di...", options: ["Lambung", "Mulut", "Usus Besar", "Usus Halus"], correct: 3 },
+                { q: "Organ tubuh yang berfungsi memompa darah ke seluruh tubuh adalah...", options: ["Paru-paru", "Hati", "Jantung", "Ginjal"], correct: 2 },
+                { q: "Enzim ptialin di dalam mulut berfungsi untuk mengubah amilum menjadi...", options: ["Lemak", "Glukosa", "Protein", "Vitamin"], correct: 1 },
+                { q: "Tulang belakang berfungsi untuk...", options: ["Melindungi otak", "Menopang tubuh", "Melindungi paru-paru", "Alat pencernaan"], correct: 1 }
+            ],
+            6: [
+                { q: "Alat yang dapat mengubah energi listrik menjadi energi gerak adalah...", options: ["Setrika", "Lampu", "Kipas Angin", "Radio"], correct: 2 },
+                { q: "Bahan yang dapat menghantarkan panas atau listrik dengan baik disebut...", options: ["Isolator", "Konduktor", "Radiator", "Adaptor"], correct: 1 },
+                { q: "Rangkaian listrik yang disusun secara sejajar disebut rangkaian...", options: ["Seri", "Paralel", "Campuran", "Tunggal"], correct: 1 },
+                { q: "Karet dan plastik adalah contoh bahan...", options: ["Konduktor", "Isolator", "Magnetik", "Logam"], correct: 1 },
+                { q: "Pusat pembangkit listrik yang menggunakan tenaga air disebut...", options: ["PLTU", "PLTA", "PLTN", "PLTS"], correct: 1 }
+            ],
+            7: [
+                { q: "Kemampuan makhluk hidup untuk menyesuaikan diri dengan lingkungannya disebut...", options: ["Fotosintesis", "Adaptasi", "Reproduksi", "Iritabilitas"], correct: 1 },
+                { q: "Cicak memutuskan ekornya untuk mengelabui musuh. Cara ini disebut...", options: ["Mimikri", "Autotomi", "Ekolokasi", "Hibernasi"], correct: 1 },
+                { q: "Bunglon mengubah warna kulitnya sesuai tempat hinggapnya. Hal ini disebut...", options: ["Mimikri", "Autotomi", "Ekolokasi", "Kamuflase"], correct: 0 },
+                { q: "Tumbuhan kaktus memiliki daun berbentuk duri bertujuan untuk...", options: ["Menyerap air", "Mengurangi penguapan", "Menakuti musuh", "Melakukan fotosintesis"], correct: 1 },
+                { q: "Kaki berselaput pada bebek berfungsi untuk...", options: ["Berlari cepat", "Bertengger di pohon", "Berenang dan berjalan di lumpur", "Mencengkeram mangsa"], correct: 2 }
+            ],
+            8: [
+                { q: "Pusat tata surya kita adalah...", options: ["Bumi", "Bulan", "Matahari", "Jupiter"], correct: 2 },
+                { q: "Planet yang dikenal sebagai 'Planet Merah' adalah...", options: ["Venus", "Mars", "Saturnus", "Merkurius"], correct: 1 },
+                { q: "Benda langit yang mengelilingi planet disebut...", options: ["Asteroid", "Komet", "Satelit", "Meteor"], correct: 2 },
+                { q: "Planet terbesar dalam tata surya kita adalah...", options: ["Bumi", "Neptunus", "Uranus", "Jupiter"], correct: 3 },
+                { q: "Benda langit yang sering disebut bintang beralih adalah...", options: ["Bintang", "Meteor", "Planet", "Bulan"], correct: 1 }
+            ],
+            9: [
+                { q: "Sumber energi yang tidak akan habis meskipun digunakan secara terus-menerus disebut...", options: ["Energi fosil", "Energi alternatif", "Energi nuklir", "Energi kimia"], correct: 1 },
+                { q: "Alat yang digunakan untuk mengubah energi cahaya matahari menjadi energi listrik adalah...", options: ["Generator", "Turbin", "Panel Surya", "Aki"], correct: 2 },
+                { q: "Gas yang dihasilkan dari kotoran ternak untuk bahan bakar disebut...", options: ["Oksigen", "Nitrogen", "Biogas", "Karbon monoksida"], correct: 2 },
+                { q: "Contoh sumber energi alternatif yang berasal dari dalam bumi adalah...", options: ["Angin", "Panas Bumi", "Cahaya Matahari", "Air Terjun"], correct: 1 },
+                { q: "Kincir angin memanfaatkan energi ... untuk menghasilkan listrik.", options: ["Panas", "Kimia", "Angin/Gerak", "Cahaya"], correct: 2 }
+            ]
+        };
+
+        let gameState = { 
+            collected: [], 
+            currentLoc: null, 
+            currentIdx: 0, 
+            gokuHp: 100, 
+            enemyHp: 100, 
+            canAnswer: true,
+            musicStarted: false,
+            isMuted: false
+        };
+
+        const openingMusic = document.getElementById('opening-music');
+        const battleMusic = document.getElementById('battle-music');
+        const attackSound = document.getElementById('attack-sound');
+        const musicIcon = document.getElementById('music-icon');
+
+        // Fungsi Memulai Musik
+        function playOpeningMusic() {
+            if (!gameState.musicStarted) {
+                openingMusic.play().catch(e => console.log("Menunggu interaksi user untuk musik."));
+                gameState.musicStarted = true;
+            }
+        }
+
+        // Fungsi Mute/Unmute Global
+        function toggleMute(event) {
+            event.stopPropagation();
+            gameState.isMuted = !gameState.isMuted;
+            openingMusic.muted = gameState.isMuted;
+            battleMusic.muted = gameState.isMuted;
+            attackSound.muted = gameState.isMuted;
+            
+            if (gameState.isMuted) {
+                musicIcon.innerText = "🔈";
+            } else {
+                musicIcon.innerText = "🔊";
+                if (document.getElementById('battle-screen').classList.contains('hidden')) {
+                    openingMusic.play();
+                } else {
+                    battleMusic.play();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { renderScatteredBalls(); });
+
+        function openRadar() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('map-screen').classList.remove('hidden');
+            renderMap();
+        }
+
+        function renderScatteredBalls() {
+            const container = document.getElementById('scattered-balls');
+            const svg = document.getElementById('path-svg');
+            container.innerHTML = '';
+            svg.innerHTML = svg.innerHTML; 
+
+            for (let i = 1; i <= 9; i++) {
+                const pos = ballPositions[i-1];
+                const isCollected = gameState.collected.includes(i);
+                const isAvailable = (i === 1 || gameState.collected.includes(i - 1));
+                const isCurrent = isAvailable && !isCollected;
+
+                if (i < 9) {
+                    const nextPos = ballPositions[i];
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", pos.left + "%"); line.setAttribute("y1", pos.top + "%");
+                    line.setAttribute("x2", nextPos.left + "%"); line.setAttribute("y2", nextPos.top + "%");
+                    line.classList.add("path-line");
+                    if (isCollected) line.classList.add("path-completed");
+                    line.setAttribute("marker-end", isCollected ? "url(#arrow-gold)" : "url(#arrow)");
+                    svg.appendChild(line);
+                }
+
+                const ball = document.createElement('button');
+                ball.className = "dragonball-btn w-12 h-12 md:w-16 md:h-16 rounded-full text-red-600 font-bold border-2 border-white";
+                ball.style.top = pos.top + "%"; ball.style.left = pos.left + "%";
+                if (!isAvailable) ball.classList.add('locked');
+                if (isCurrent) ball.classList.add('current-level');
+                let stars = '★'.repeat(((i-1) % 7) + 1);
+                ball.innerHTML = `<span class="text-[6px] md:text-[8px] leading-none">${stars}</span><span class="text-[10px] md:text-xs">${i}</span>`;
+                ball.onclick = () => { if (isAvailable && !isCollected) startLevelDirectly(i); };
+                container.appendChild(ball);
+            }
+        }
+
+        function startLevelDirectly(levelId) {
+            playOpeningMusic(); 
+            const loc = locations.find(l => l.id === levelId);
+            if (loc) { 
+                document.getElementById('start-screen').classList.add('hidden'); 
+                startBattle(loc); 
+            }
+        }
+
+        function goToHome() {
+            battleMusic.pause();
+            battleMusic.currentTime = 0;
+            if (!gameState.isMuted) {
+                openingMusic.currentTime = 0;
+                openingMusic.play();
+            }
+            resetBattleStyles();
+            document.getElementById('map-screen').classList.add('hidden');
+            document.getElementById('battle-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            renderScatteredBalls(); 
+        }
+
+        function resetBattleStyles() {
+            const bs = document.getElementById('battle-screen');
+            bs.style.backgroundImage = 'none';
+            document.getElementById('battle-overlay-div').classList.add('hidden');
+            document.getElementById('answer-status').classList.add('hidden');
+            hideEffect();
+        }
+
+        function renderMap() {
+            const container = document.querySelector('.map-container');
+            container.innerHTML = '';
+            locations.forEach(loc => {
+                const isCollected = gameState.collected.includes(loc.id);
+                const isAvailable = (loc.id === 1 || gameState.collected.includes(loc.id - 1));
+                const btn = document.createElement('button');
+                btn.className = `relative flex flex-col items-center justify-center p-6 rounded-[2rem] border-4 transition-all shadow-xl 
+                    ${isCollected ? 'bg-green-100 border-green-500 opacity-80' : 
+                      isAvailable ? 'bg-white border-orange-500 hover:scale-105 active:scale-95' : 
+                      'bg-gray-200 border-gray-400 opacity-50 grayscale'}`;
+                btn.onclick = () => { if (isAvailable) { document.getElementById('map-screen').classList.add('hidden'); startBattle(loc); } };
+                btn.innerHTML = `<div class="text-5xl mb-2">${isCollected ? '✅' : isAvailable ? loc.icon : '🔒'}</div><div class="text-xs font-bold uppercase mb-1">${loc.property}</div><div class="text-[10px] font-dragon uppercase">${loc.name}</div>`;
+                container.appendChild(btn);
+            });
+            document.getElementById('collected-count').innerText = `${gameState.collected.length}/9`;
+        }
+
+        function startBattle(loc) {
+            openingMusic.pause();
+            battleMusic.currentTime = 0;
+            if (!gameState.isMuted) battleMusic.play();
+
+            gameState.currentLoc = loc;
+            gameState.enemyHp = 100;
+            gameState.gokuHp = 100;
+            gameState.currentIdx = 0;
+            gameState.canAnswer = true;
+            updateHpBars();
+            const bs = document.getElementById('battle-screen');
+            if (loc.battleBg) { bs.style.backgroundImage = `url('${loc.battleBg}')`; document.getElementById('battle-overlay-div').classList.remove('hidden'); }
+            document.getElementById('enemy-label').innerText = loc.enemy.toUpperCase();
+            loadQuestion();
+            bs.classList.remove('hidden');
+        }
+
+        function loadQuestion() {
+            const loc = gameState.currentLoc;
+            const qData = questionBank[loc.id][gameState.currentIdx];
+            document.getElementById('quest-counter').innerText = `SOAL ${gameState.currentIdx + 1}/5`;
+            displayQuestion(qData);
+        }
+
+        function displayQuestion(qData) {
+            document.getElementById('question-text').innerText = qData.q;
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-2.5 rounded-lg bg-white hover:bg-blue-600 hover:text-white transition-all font-bold text-[10px] md:text-[12px] border-2 border-slate-200 shadow-sm";
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(idx, qData);
+                container.appendChild(btn);
+            });
+            gameState.canAnswer = true;
+        }
+
+        function showVisualEffect(type) {
+            const container = document.getElementById('effect-container');
+            const ball = document.getElementById('energy-ball-el');
+            const beam = document.getElementById('effect-beam-el');
+            
+            container.classList.remove('effect-to-hero', 'theme-yellow', 'theme-blue');
+            ball.classList.remove('charging-active');
+            beam.classList.remove('beam-active');
+            void container.offsetWidth; // Reset animation
+            
+            if (type === 'correct') {
+                container.classList.add('theme-yellow');
+                container.style.display = 'block';
+                
+                // Sinkronisasi dengan suara Kamehameha
+                if (!gameState.isMuted) {
+                    attackSound.currentTime = 0;
+                    attackSound.play();
+                }
+
+                // 1. Fase Pengumpulan Energi (Charging) saat suara "Ka-me-ha-me..."
+                ball.classList.add('charging-active');
+                
+                // 2. Fase Tembakan Laser saat suara "HAAA!" (Detik ke-3 approx)
+                setTimeout(() => {
+                    beam.classList.add('beam-active');
+                    // Sembunyikan setelah laser selesai
+                    setTimeout(() => { hideEffect(); }, 1500);
+                }, 3000); 
+
+            } else {
+                // Jawaban salah: Serangan musuh langsung (Tanpa delay buildup)
+                container.classList.add('effect-to-hero', 'theme-blue');
+                container.style.display = 'block';
+                beam.classList.add('beam-active');
+                setTimeout(() => { hideEffect(); }, 1200);
+            }
+        }
+
+        function hideEffect() {
+            const container = document.getElementById('effect-container');
+            if(container) container.style.display = 'none';
+        }
+
+        function checkAnswer(chosen, qData) {
+            if (!gameState.canAnswer) return;
+            gameState.canAnswer = false;
+            const statusEl = document.getElementById('answer-status');
+            statusEl.classList.remove('hidden', 'text-green-500', 'text-red-500', 'status-show');
+            void statusEl.offsetWidth; 
+
+            const isCorrect = chosen === qData.correct;
+            
+            if (isCorrect) {
+                statusEl.innerText = "✓ BERHASIL!";
+                statusEl.classList.add('text-green-500', 'status-show');
+                showVisualEffect('correct');
+                gameState.enemyHp -= 20;
+            } else {
+                statusEl.innerText = "✗ SALAH!";
+                statusEl.classList.add('text-red-500', 'status-show');
+                showVisualEffect('to-hero');
+                gameState.gokuHp -= 34;
+            }
+            updateHpBars();
+
+            // Beri jeda waktu yang lebih lama jika jawaban benar untuk melihat animasi Kamehameha
+            const nextStepDelay = isCorrect ? 5000 : 1500;
+
+            setTimeout(() => {
+                statusEl.classList.add('hidden');
+                if (gameState.gokuHp <= 0) showFinalFeedback(false, "KALAH!", "Ayo pelajari lagi!");
+                else if (gameState.enemyHp <= 0) showFinalFeedback(true, "MENANG!", "Bola Naga Berhasil Didapat!");
+                else {
+                    gameState.currentIdx++;
+                    if (gameState.currentIdx >= 5) showFinalFeedback(true, "MENANG!", "Misi Level Ini Selesai!");
+                    else loadQuestion();
+                }
+            }, nextStepDelay);
+        }
+
+        function updateHpBars() {
+            document.getElementById('goku-hp').style.width = gameState.gokuHp + '%';
+            document.getElementById('enemy-hp').style.width = gameState.enemyHp + '%';
+        }
+
+        function showFinalFeedback(isWin, title, msg) {
+            battleMusic.pause();
+            document.getElementById('feedback-title').innerText = title;
+            document.getElementById('feedback-msg').innerText = msg;
+            document.getElementById('feedback-modal').classList.remove('hidden');
+            document.getElementById('feedback-btn').innerText = isWin ? "AMBIL BOLA NAGA" : "COBA LAGI";
+            
+            if (isWin) {
+                document.getElementById('feedback-icon').innerText = "🔮";
+                document.getElementById('feedback-btn').onclick = () => {
+                    if (!gameState.collected.includes(gameState.currentLoc.id)) gameState.collected.push(gameState.currentLoc.id);
+                    document.getElementById('feedback-modal').classList.add('hidden');
+                    if (gameState.collected.length === 9) {
+                        document.getElementById('battle-screen').classList.add('hidden');
+                        document.getElementById('end-screen').classList.remove('hidden');
+                        renderFinalBalls();
+                    } else goToHome();
+                };
+            } else {
+                document.getElementById('feedback-icon').innerText = "💥";
+                document.getElementById('feedback-btn').onclick = () => { document.getElementById('feedback-modal').classList.add('hidden'); goToHome(); };
+            }
+        }
+
+        function renderFinalBalls() {
+            const container = document.getElementById('ball-display');
+            container.innerHTML = '';
+            for(let i=1; i<=9; i++) {
+                const ball = document.createElement('div');
+                ball.className = "w-16 h-16 md:w-20 md:h-20 dragonball-bg rounded-full flex flex-col items-center justify-center text-red-600 font-bold shadow-xl border-4 border-white ball-glow";
+                let stars = '★'.repeat(((i-1) % 7) + 1);
+                ball.innerHTML = `<span class="text-[10px] md:text-xs leading-none">${stars}</span><span class="text-sm md:text-lg">${i}</span>`;
+                container.appendChild(ball);
+            }
+        }
+    </script>
+</body>
+</html>
