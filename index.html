@@ -181,6 +181,63 @@
         }
         #music-toggle-btn:hover { transform: scale(1.1); background: rgba(0,0,0,0.8); }
 
+        /* Gaya Tombol Pengembang */
+        #dev-btn {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            z-index: 100;
+            background: rgba(255, 138, 0, 0.8);
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        #dev-btn:hover { transform: scale(1.05); background: rgba(255, 138, 0, 1); }
+
+        /* Gaya Modal Pengembang */
+        #dev-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-blur: 8px;
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .dev-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 4px solid var(--db-yellow);
+            border-radius: 2rem;
+            max-width: 350px;
+            width: 100%;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 0 30px rgba(250, 204, 21, 0.3);
+            animation: status-pop 0.4s ease-out;
+        }
+        .dev-photo {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 5px solid var(--db-yellow);
+            margin: 0 auto 1.5rem;
+            object-fit: cover;
+            background: #333;
+            box-shadow: 0 0 15px var(--db-yellow);
+        }
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #000; }
         ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 10px; }
@@ -188,17 +245,13 @@
 </head>
 <body onclick="playOpeningMusic()">
 
-    <!-- Audio Player: Musik Pembuka -->
+    <!-- Audio Player -->
     <audio id="opening-music" loop>
         <source src="https://raw.githubusercontent.com/jeckyemerson34-JQ/musikopeningdragonball/main/LAGU%20OPENING%20DRAGON%20BALL%20%E2%94%82%20LIRIK%20-%20GOOD%20MUSIC.mp3" type="audio/mpeg">
     </audio>
-
-    <!-- Audio Player: Musik Pertempuran -->
     <audio id="battle-music" loop>
         <source src="https://github.com/jeckyemerson34-JQ/musik-ketika-game-dragon-ball-dimulai/raw/refs/heads/main/Dragonball%20Super%20OST%20-%20Desperate%20Assault%20Theme%20%5BHQ%20Cover%5D%20-%20Pok%C3%A9Mixr92.mp3" type="audio/mpeg">
     </audio>
-
-    <!-- Audio Player: Suara Serangan Kamehameha -->
     <audio id="attack-sound">
         <source src="https://github.com/jeckyemerson34-JQ/kamehameha/raw/refs/heads/main/kamehameha%20sound%20-%20Marian%20Baicu%20(1).mp3" type="audio/mpeg">
     </audio>
@@ -208,8 +261,25 @@
         <span id="music-icon">🔊</span>
     </button>
 
+    <!-- Tombol Pengembang Game -->
+    <button id="dev-btn" onclick="toggleDevModal(event, true)">
+        <span>👤</span>
+        <span>PENGEMBANG GAME</span>
+    </button>
+
+    <!-- Modal Pengembang Game -->
+    <div id="dev-modal" onclick="toggleDevModal(event, false)">
+        <div class="dev-card" onclick="event.stopPropagation()">
+            <img src="https://i.imgur.com/laIa6A6.jpeg" alt="Jecky Emerson" class="dev-photo" onerror="this.src='https://ui-avatars.com/api/?name=Jecky+Emerson&background=facc15&color=000&size=150'">
+            <!-- Nama diperkecil ukurannya dengan text-xl -->
+            <h2 class="text-white font-dragon text-xl mb-1">Jecky Emerson, S.Pd., Gr</h2>
+            <p class="text-yellow-400 font-bold text-sm mb-4 uppercase tracking-widest italic">Duta Teknologi Kemendikdasmen (GPD)</p>
+            <div class="h-1 w-20 bg-yellow-500 mx-auto mb-6 rounded-full"></div>
+            <button onclick="toggleDevModal(event, false)" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-dragon rounded-xl transition-all uppercase text-sm border-2 border-white shadow-lg">Tutup</button>
+        </div>
+    </div>
+
     <div id="game-container" class="w-full h-full relative flex flex-col overflow-hidden">
-        
         <!-- Layar Beranda -->
         <div id="start-screen" class="absolute inset-0 z-10 overflow-hidden text-center flex items-center justify-center">
             <div class="landing-bg"></div>
@@ -403,32 +473,30 @@
         const attackSound = document.getElementById('attack-sound');
         const musicIcon = document.getElementById('music-icon');
 
-        // Fungsi Memulai Musik
         function playOpeningMusic() {
             if (!gameState.musicStarted) {
-                openingMusic.play().catch(e => console.log("Menunggu interaksi user untuk musik."));
+                openingMusic.play().catch(e => {});
                 gameState.musicStarted = true;
             }
         }
 
-        // Fungsi Mute/Unmute Global
         function toggleMute(event) {
             event.stopPropagation();
             gameState.isMuted = !gameState.isMuted;
             openingMusic.muted = gameState.isMuted;
             battleMusic.muted = gameState.isMuted;
             attackSound.muted = gameState.isMuted;
-            
-            if (gameState.isMuted) {
-                musicIcon.innerText = "🔈";
-            } else {
-                musicIcon.innerText = "🔊";
-                if (document.getElementById('battle-screen').classList.contains('hidden')) {
-                    openingMusic.play();
-                } else {
-                    battleMusic.play();
-                }
+            musicIcon.innerText = gameState.isMuted ? "🔈" : "🔊";
+            if (!gameState.isMuted) {
+                if (document.getElementById('battle-screen').classList.contains('hidden')) openingMusic.play();
+                else battleMusic.play();
             }
+        }
+
+        function toggleDevModal(event, show) {
+            if (event) event.stopPropagation();
+            const modal = document.getElementById('dev-modal');
+            modal.style.display = show ? 'flex' : 'none';
         }
 
         document.addEventListener('DOMContentLoaded', () => { renderScatteredBalls(); });
@@ -571,30 +639,21 @@
             container.classList.remove('effect-to-hero', 'theme-yellow', 'theme-blue');
             ball.classList.remove('charging-active');
             beam.classList.remove('beam-active');
-            void container.offsetWidth; // Reset animation
+            void container.offsetWidth; 
             
             if (type === 'correct') {
                 container.classList.add('theme-yellow');
                 container.style.display = 'block';
-                
-                // Sinkronisasi dengan suara Kamehameha
                 if (!gameState.isMuted) {
                     attackSound.currentTime = 0;
                     attackSound.play();
                 }
-
-                // 1. Fase Pengumpulan Energi (Charging) saat suara "Ka-me-ha-me..."
                 ball.classList.add('charging-active');
-                
-                // 2. Fase Tembakan Laser saat suara "HAAA!" (Detik ke-3 approx)
                 setTimeout(() => {
                     beam.classList.add('beam-active');
-                    // Sembunyikan setelah laser selesai
                     setTimeout(() => { hideEffect(); }, 1500);
                 }, 3000); 
-
             } else {
-                // Jawaban salah: Serangan musuh langsung (Tanpa delay buildup)
                 container.classList.add('effect-to-hero', 'theme-blue');
                 container.style.display = 'block';
                 beam.classList.add('beam-active');
@@ -615,7 +674,6 @@
             void statusEl.offsetWidth; 
 
             const isCorrect = chosen === qData.correct;
-            
             if (isCorrect) {
                 statusEl.innerText = "✓ BERHASIL!";
                 statusEl.classList.add('text-green-500', 'status-show');
@@ -629,7 +687,6 @@
             }
             updateHpBars();
 
-            // Beri jeda waktu yang lebih lama jika jawaban benar untuk melihat animasi Kamehameha
             const nextStepDelay = isCorrect ? 5000 : 1500;
 
             setTimeout(() => {
