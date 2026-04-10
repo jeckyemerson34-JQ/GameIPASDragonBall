@@ -161,12 +161,17 @@
 
         .battle-overlay { background: rgba(0,0,0,0.2); position: absolute; inset: 0; z-index: -1; }
         
-        /* Gaya Tombol Musik */
-        #music-toggle-btn {
+        /* Gaya Tombol Kontrol Kanan Atas */
+        .top-right-controls {
             position: fixed;
             top: 15px;
             right: 15px;
             z-index: 100;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
             background: rgba(0,0,0,0.5);
             border: 2px solid #fff;
             color: #fff;
@@ -178,8 +183,9 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        #music-toggle-btn:hover { transform: scale(1.1); background: rgba(0,0,0,0.8); }
+        .control-btn:hover { transform: scale(1.1); background: rgba(0,0,0,0.8); }
 
         /* Gaya Tombol Pengembang */
         #dev-btn {
@@ -256,10 +262,17 @@
         <source src="https://github.com/jeckyemerson34-JQ/kamehameha/raw/refs/heads/main/kamehameha%20sound%20-%20Marian%20Baicu%20(1).mp3" type="audio/mpeg">
     </audio>
 
-    <!-- Tombol Suara -->
-    <button id="music-toggle-btn" onclick="toggleMute(event)">
-        <span id="music-icon">🔊</span>
-    </button>
+    <!-- Kontrol Kanan Atas -->
+    <div class="top-right-controls">
+        <!-- Tombol Layar Penuh -->
+        <button id="fullscreen-btn" class="control-btn" onclick="toggleFullScreen(event)">
+            <span id="fullscreen-icon">⛶</span>
+        </button>
+        <!-- Tombol Suara -->
+        <button id="music-toggle-btn" class="control-btn" onclick="toggleMute(event)">
+            <span id="music-icon">🔊</span>
+        </button>
+    </div>
 
     <!-- Tombol Pengembang Game -->
     <button id="dev-btn" onclick="toggleDevModal(event, true)">
@@ -271,7 +284,6 @@
     <div id="dev-modal" onclick="toggleDevModal(event, false)">
         <div class="dev-card" onclick="event.stopPropagation()">
             <img src="https://i.imgur.com/laIa6A6.jpeg" alt="Jecky Emerson" class="dev-photo" onerror="this.src='https://ui-avatars.com/api/?name=Jecky+Emerson&background=facc15&color=000&size=150'">
-            <!-- Nama diperkecil ukurannya dengan text-xl -->
             <h2 class="text-white font-dragon text-xl mb-1">Jecky Emerson, S.Pd., Gr</h2>
             <p class="text-yellow-400 font-bold text-sm mb-4 uppercase tracking-widest italic">Duta Teknologi Kemendikdasmen (GPD)</p>
             <div class="h-1 w-20 bg-yellow-500 mx-auto mb-6 rounded-full"></div>
@@ -472,11 +484,28 @@
         const battleMusic = document.getElementById('battle-music');
         const attackSound = document.getElementById('attack-sound');
         const musicIcon = document.getElementById('music-icon');
+        const fullscreenIcon = document.getElementById('fullscreen-icon');
 
         function playOpeningMusic() {
             if (!gameState.musicStarted) {
                 openingMusic.play().catch(e => {});
                 gameState.musicStarted = true;
+            }
+        }
+
+        // Fungsi Layar Penuh
+        function toggleFullScreen(event) {
+            if (event) event.stopPropagation();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Gagal masuk mode layar penuh: ${err.message}`);
+                });
+                fullscreenIcon.innerText = "✕";
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    fullscreenIcon.innerText = "⛶";
+                }
             }
         }
 
